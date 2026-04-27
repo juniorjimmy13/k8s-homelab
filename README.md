@@ -104,3 +104,31 @@ curl -X POST http://localhost:9000/webhook \
   -H "X-Webhook-Secret: homelab-secret" \
   -d '{"repo":"my-game","branch":"main","commit":"abc123"}'
 ```
+
+## rbac
+
+Namespace isolation for two independent teams. Each team gets their own namespace with a Role that allows full control over their own workloads but no access to other namespaces or cluster infrastructure.
+
+### What each team can do
+
+- Create, update, delete pods, deployments, services, configmaps, and jobs in their own namespace
+- Nothing outside their own namespace
+
+### What each team cannot do
+
+- Access another team's namespace
+- List or modify cluster nodes
+- Access the monitoring namespace
+- Create or modify cluster-level resources
+
+### Verified with
+
+```bash
+kubectl auth can-i list pods --namespace=team-proj1 \
+  --as=system:serviceaccount:team-proj1:proj1-developer
+# yes
+
+kubectl auth can-i list pods --namespace=team-proj2 \
+  --as=system:serviceaccount:team-proj1:proj1-developer
+# no
+```
