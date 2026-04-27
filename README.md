@@ -67,3 +67,40 @@ curl http://localhost:8090/status
 - The full request path — browser → ingress → service → pod
 - How kubectl and client-go both talk to the same Kubernetes API
 - Debugging with kubectl describe, kubectl get -w, and kubectl logs
+
+## ci-bridge
+
+A Go HTTP service that acts as middleware between a CI system and Kubernetes. Receives webhook events, validates a secret token, and creates Kubernetes Jobs to run builds.
+
+### Endpoints
+
+- `POST /webhook` — accepts a JSON payload and triggers a Kubernetes Job
+- `GET /health` — returns `{"status":"ok"}` for health checks
+
+### Webhook payload
+
+```json
+{
+  "repo": "my-game",
+  "branch": "main",
+  "commit": "abc123"
+}
+```
+
+### Security
+
+Requests must include the `X-Webhook-Secret` header with the correct token. Requests without it or with a wrong token are rejected with 401 Unauthorized.
+
+### Running
+
+```bash
+cd ci-bridge
+go run main.go
+# listening on :9000
+
+# Trigger a build
+curl -X POST http://localhost:9000/webhook \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Secret: homelab-secret" \
+  -d '{"repo":"my-game","branch":"main","commit":"abc123"}'
+```
